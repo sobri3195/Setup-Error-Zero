@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Setup-Error Zero</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f8ff; }
+      .card { max-width: 880px; margin: 0 auto; background: #fff; padding: 1.2rem 1.4rem; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+      h1 { margin-top: 0; }
+      .grid { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: .8rem; }
+      label { font-size: .9rem; color: #333; display: flex; flex-direction: column; gap: .3rem; }
+      input { padding: .55rem; border-radius: 8px; border: 1px solid #cfd7e6; }
+      button { margin-top: 1rem; padding: .65rem 1rem; border: 0; border-radius: 8px; background: #2d5bff; color: #fff; cursor: pointer; }
+      .result { margin-top: 1rem; background: #f8fbff; border: 1px solid #d6e4ff; border-radius: 8px; padding: .8rem; }
+      .muted { color: #666; font-size: .9rem; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const { useState } = React;
+
+      function App() {
+        const [form, setForm] = useState({ tx_mm: 0, ty_mm: 0, tz_mm: 0, rx_deg: 0, ry_deg: 0, rz_deg: 0 });
+        const [result, setResult] = useState(null);
+
+        const update = (key, value) => setForm(prev => ({ ...prev, [key]: Number(value) }));
+
+        const submit = async () => {
+          const res = await fetch('/api/recommend', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(form)
+          });
+          setResult(await res.json());
+        };
+
+        return (
+          <div className="card">
+            <h1>Setup-Error Zero</h1>
+            <p className="muted">AI deteksi translasi/rotasi dan rekomendasi koreksi setup real-time dari portal imaging/CBCT.</p>
+            <div className="grid">
+              <label>Tx (mm)<input type="number" value={form.tx_mm} onChange={(e) => update('tx_mm', e.target.value)} /></label>
+              <label>Ty (mm)<input type="number" value={form.ty_mm} onChange={(e) => update('ty_mm', e.target.value)} /></label>
+              <label>Tz (mm)<input type="number" value={form.tz_mm} onChange={(e) => update('tz_mm', e.target.value)} /></label>
+              <label>Rx (°)<input type="number" value={form.rx_deg} onChange={(e) => update('rx_deg', e.target.value)} /></label>
+              <label>Ry (°)<input type="number" value={form.ry_deg} onChange={(e) => update('ry_deg', e.target.value)} /></label>
+              <label>Rz (°)<input type="number" value={form.rz_deg} onChange={(e) => update('rz_deg', e.target.value)} /></label>
+            </div>
+            <button onClick={submit}>Hitung Rekomendasi Koreksi</button>
+
+            {result && (
+              <div className="result">
+                <strong>Risk Score:</strong> {result.risk_score}<br />
+                <strong>Aksi:</strong> {result.action}<br />
+                <strong>Shift (mm):</strong> X {result.recommendation.shift_mm.x}, Y {result.recommendation.shift_mm.y}, Z {result.recommendation.shift_mm.z}<br />
+                <strong>Rotasi (°):</strong> Pitch {result.recommendation.rotation_deg.pitch}, Roll {result.recommendation.rotation_deg.roll}, Yaw {result.recommendation.rotation_deg.yaw}<br />
+                <p className="muted">{result.note}</p>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+  </body>
+</html>
